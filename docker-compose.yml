@@ -1,0 +1,226 @@
+version: "3.9"
+
+# ---------------------------------------------------------------------------
+# Phase 0: hardened single-VM layout with two real demo services
+# (products / Postgres, invoices / MongoDB), each running 2 replicas
+# behind nginx to demonstrate load balancing + routing live.
+# See README.md for the full reasoning and priority order.
+# ---------------------------------------------------------------------------
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true   # DB traffic never touches the public network
+
+volumes:
+  mongo_data:
+  postgres_data:
+  mongo_backups:
+  postgres_backups:
+
+services:
+  # --- Reverse proxy + load balancer + static UI host ---
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ui:/usr/share/nginx/html:ro
+    networks:
+      - frontend
+    depends_on:
+      - products1
+      - products2
+      - products3
+      - products4
+      - invoices1
+      - invoices2
+      - invoices3
+
+  # --- Products service: 4 replicas, backed by Postgres ---
+  products1:
+    build: ./products-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - INSTANCE_NAME=products1
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  products2:
+    build: ./products-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - INSTANCE_NAME=products2
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  products3:
+    build: ./products-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - INSTANCE_NAME=products3
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  products4:
+    build: ./products-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - INSTANCE_NAME=products4
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  # --- Invoice service: 3 replicas, backed by MongoDB ---
+  invoices1:
+    build: ./invoice-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - INSTANCE_NAME=invoices1
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      mongo:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  invoices2:
+    build: ./invoice-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - INSTANCE_NAME=invoices2
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      mongo:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  invoices3:
+    build: ./invoice-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - INSTANCE_NAME=invoices3
+    networks: [frontend, backend]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      mongo:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 256M }
+
+  # --- MongoDB: isolated network, not publicly reachable ---
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - mongo_data:/data/db
+      - mongo_backups:/backups
+    networks: [backend]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  # --- PostgreSQL: isolated network, not publicly reachable ---
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_backups:/backups
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  # --- Automated nightly backups for both databases ---
+  backup:
+    build: ./scripts
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - mongo_backups:/backups/mongo
+      - postgres_backups:/backups/postgres
+    networks: [backend]
+    depends_on:
+      - mongo
+      - postgres
