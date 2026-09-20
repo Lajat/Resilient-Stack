@@ -1,4 +1,4 @@
-# Resilient-Stack
+# Resilient Stack
 
 ## The problem, restated
 
