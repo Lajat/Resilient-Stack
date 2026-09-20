@@ -1,4 +1,4 @@
-# Application Lead Assignment — Zenalyst AI
+# Resilient-Stack
 
 ## The problem, restated
 
