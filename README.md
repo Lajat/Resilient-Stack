@@ -333,13 +333,4 @@ docker-compose up --build
 - **Health checks**: `curl http://localhost:8080/health`
 - Backups land in the `mongo_backups`/`postgres_backups` volumes; inspect with
   `docker-compose exec backup ls /backups/mongo`
-
-### Proving load balancing live in the interview
-
-1. Open the UI, add a product.
-2. Refresh the products list a few times — watch the `servedBy` tag (and the
-   replica strip in the UI) move between `products1`–`products4` (nginx
-   round-robin).
-3. Optionally, `docker-compose stop products1` mid-demo and show requests
-   keep succeeding — nginx stops routing to the dead replica once its
-   healthcheck fails.
+  
