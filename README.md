@@ -288,37 +288,6 @@ upfront about them rather than presenting "move to AWS" as free:
    production for a full billing/traffic cycle** — cheap insurance against
    an issue that only shows up under real load.
 
-## What I deliberately left out, and why
-
-- **Offsite backup sync (S3) is a stub, not implemented.** Wiring it up
-  needs real AWS credentials/IAM scoping that don't exist in a take-home
-  context — the script is structured so it's a one-line swap once they do.
-- **TLS is not implemented in this demo build** (nginx serves plain HTTP on
-  `:8080`). Dropped so the whole stack — including the UI — can be
-  `docker-compose up`'d and clicked through on a clean machine with zero
-  certificate setup. The nginx config in Phase 1 would add
-  `ssl_certificate` directives; it's a config addition, not an architecture
-  change.
-- **Only 2 of the original 7 app containers are represented as full
-  services** (products, invoices), with 4 and 3 replicas respectively. The
-  remaining 5 would follow the identical pattern — duplicating a 3rd, 4th,
-  5th service adds repetition without adding new reasoning. In a real PR
-  I'd factor the repeated replica blocks into a Compose extension/YAML
-  anchor rather than copy-paste.
-- **No Terraform/CloudFormation for the Phase 1 AWS target state.** The
-  brief asked for reasoning and order of work over a diagram of the perfect
-  system, so I described the target state and the reasoning behind each
-  piece rather than building infra-as-code for an environment I'd be
-  provisioning blind.
-- **Auth/authz within the app layer** — out of scope for an infrastructure
-  question; the demo services have no login system.
-- **The deploy/rollback steps in `ci-cd.yml` are stubs**, not wired to a
-  real VM — there's no actual target host in a take-home context, and
-  faking SSH credentials against nothing felt like it would obscure the
-  actual point (the gate structure) rather than demonstrate it. The
-  build→test gate and the rollback trigger condition are both real and
-  would need only host/SSH secrets to go live.
-
 ## Running it
 
 ```bash
