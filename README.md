@@ -230,21 +230,6 @@ asked for reasoning over a perfect-system diagram:
   service health, errors, latency, resource usage, database health, and deployment failures, with notifications to the appropriate channel.
 
 
-## Assumptions
-
-- The 7 application containers are stateless (session/state lives in the DBs,
-  not in-process) — if not, the load-balancing story in `nginx.conf` and the
-  ECS target state both need sticky sessions or a shared session store, which
-  I did not build.
-- Traffic volume is modest enough that a single VM was viable at all — this
-  informed the "fix in place first, migrate second" order rather than an
-  immediate full rewrite.
-- There's no compliance requirement (HIPAA/PCI/etc.) driving specific
-  encryption-at-rest or audit-log requirements beyond general good practice.
-- Downtime for the Phase 0 migration itself (a few minutes, during a
-  maintenance window) is acceptable — Phase 1 is where zero-downtime deploys
-  actually get solved.
-
 ## Cost and trade-offs (Phase 1 / AWS migration)
 
 Every Phase 1 item has a cost, and part of leading this migration is being
