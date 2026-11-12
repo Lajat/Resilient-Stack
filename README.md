@@ -1,18 +1,5 @@
 # Resilient Stack
 
-## The problem, restated
-
-One VM, one public IP. Docker Compose runs 7 app containers plus MongoDB and
-PostgreSQL, both on the same box, both writing to that box's disk. Deploys are
-a `git pull` + restart. It's cheap and it hasn't failed yet — but "hasn't
-failed yet" is doing a lot of work in that sentence.
-
-The brief asked for **reasoning and order of work**, not a diagram of the
-ideal end state. So this README is organized as: what breaks first, why, and
-what I'd do about it — in the order I'd actually do it. The diagrams below are
-infrastructure only (containers, networks, request flow) — no business logic,
-since that's explicitly not what's being evaluated here.
-
 ```mermaid
 flowchart TB
     Internet((Public Internet))
